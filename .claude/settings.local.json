@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__n8n-mcp__search_templates",
+      "mcp__n8n-mcp__n8n_list_workflows",
+      "mcp__n8n-mcp__n8n_get_workflow_details",
+      "Bash(uv sync:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(del debug_api.py get_location_id.py get_token.py test_scopes.py)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "n8n-mcp"
+  ]
+}
