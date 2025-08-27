@@ -60,6 +60,22 @@ Thumbs.db
 reportes/
 logs/
 
+# Compilation and build artifacts
+dist/
+build/
+*.dist/
+*.build/
+*.onefile-build/
+
+# Nuitka specific
+nuitka-crash-report.xml
+*.build
+*.dist
+*.onefile-build
+
+# Test scripts (generated automatically)
+test_build.bat
+
 # PySide6/Qt
 *.qm
 *.pyw
@@ -67,5 +83,3 @@ logs/
 # Temporary files
 *.tmp
 *.temp
-
-*.xlsx

@@ -34,11 +34,37 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from excel_generator_xlsx import ExcelGenerator
-from highlevel_api import HighLevelAPI
+try:
+    from .excel_generator_xlsx import ExcelGenerator
+    from .highlevel_api import HighLevelAPI
+except ImportError:
+    from excel_generator_xlsx import ExcelGenerator
+    from highlevel_api import HighLevelAPI
+
+def get_resource_path():
+    """Obtiene la ruta base para recursos, funciona tanto en desarrollo como ejecutable compilado"""
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # PyInstaller
+        return sys._MEIPASS
+    elif getattr(sys, 'frozen', False):
+        # Otros empaquetadores como Nuitka
+        return os.path.dirname(sys.executable)
+    else:
+        # Script Python normal
+        return os.path.dirname(os.path.dirname(__file__))
 
 # Cargar variables de entorno
-load_dotenv()
+base_path = get_resource_path()
+env_paths = [
+    os.path.join(base_path, ".env"),
+    os.path.join(os.getcwd(), ".env"),
+    ".env"
+]
+
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        break
 
 
 class TokenCallbackHandler(BaseHTTPRequestHandler):
@@ -522,10 +548,24 @@ class MainWindow(QMainWindow):
     def update_env_file(self, access_token: str, location_id: str):
         """Actualiza el archivo .env con las credenciales."""
         env_content = []
+        
+        # Obtener ruta del archivo .env (preferir directorio de trabajo actual)
+        env_paths = [
+            os.path.join(os.getcwd(), ".env"),
+            os.path.join(get_resource_path(), ".env"),
+            ".env"
+        ]
+        
+        # Usar el primer path que exista o el de trabajo actual como fallback
+        env_path = env_paths[0]
+        for path in env_paths:
+            if os.path.exists(path):
+                env_path = path
+                break
 
         # Leer archivo existente si existe
-        if os.path.exists(".env"):
-            with open(".env", "r") as f:
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
                 env_content = f.readlines()
 
         # Variables a actualizar
@@ -559,11 +599,16 @@ class MainWindow(QMainWindow):
                 updated_lines.append(f"{key}={value}")
 
         # Escribir archivo
-        with open(".env", "w") as f:
-            f.write("\\n".join(updated_lines))
+        with open(env_path, "w") as f:
+            f.write("\n".join(updated_lines))
 
         # Recargar variables de entorno
-        load_dotenv(override=True)
+        load_dotenv(env_path, override=True)
+        
+        # También recargar desde las ubicaciones estándar
+        for reload_path in env_paths:
+            if os.path.exists(reload_path):
+                load_dotenv(reload_path, override=True)
 
     def on_token_error(self, error_message):
         """Maneja errores en la obtención de token."""
