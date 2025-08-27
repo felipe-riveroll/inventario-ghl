@@ -83,3 +83,7 @@ test_build.bat
 # Temporary files
 *.tmp
 *.temp
+
+# Development tools
+.crush.json
+nul
