@@ -61,10 +61,28 @@ env_paths = [
     ".env"
 ]
 
-for env_path in env_paths:
-    if os.path.exists(env_path):
+print(f"[DEBUG] Buscando archivo .env al inicializar:")
+print(f"[DEBUG] Base path: {base_path}")
+print(f"[DEBUG] Working directory: {os.getcwd()}")
+
+env_loaded = False
+for i, env_path in enumerate(env_paths):
+    exists = os.path.exists(env_path)
+    print(f"[DEBUG] {i+1}. {env_path} - {'EXISTE' if exists else 'NO EXISTE'}")
+    if exists and not env_loaded:
         load_dotenv(env_path)
-        break
+        print(f"[DEBUG] Variables cargadas desde: {env_path}")
+        # Verificar que se cargaron algunas variables
+        token = os.getenv("HIGHLEVEL_ACCESS_TOKEN")
+        location = os.getenv("HIGHLEVEL_LOCATION_ID") 
+        if token:
+            print(f"[DEBUG] Token encontrado: {token[:20]}...")
+        if location:
+            print(f"[DEBUG] Location ID encontrado: {location}")
+        env_loaded = True
+
+if not env_loaded:
+    print("[DEBUG] No se encontró archivo .env o no se pudieron cargar variables")
 
 
 class TokenCallbackHandler(BaseHTTPRequestHandler):
@@ -547,68 +565,109 @@ class MainWindow(QMainWindow):
 
     def update_env_file(self, access_token: str, location_id: str):
         """Actualiza el archivo .env con las credenciales."""
-        env_content = []
-        
-        # Obtener ruta del archivo .env (preferir directorio de trabajo actual)
-        env_paths = [
-            os.path.join(os.getcwd(), ".env"),
-            os.path.join(get_resource_path(), ".env"),
-            ".env"
-        ]
-        
-        # Usar el primer path que exista o el de trabajo actual como fallback
-        env_path = env_paths[0]
-        for path in env_paths:
-            if os.path.exists(path):
-                env_path = path
-                break
+        try:
+            self.log_message(f"Guardando credenciales OAuth...")
+            self.log_message(f"Access Token: {access_token[:20]}..." if access_token else "Access Token: None")
+            self.log_message(f"Location ID: {location_id}" if location_id else "Location ID: None")
+            
+            env_content = []
+            
+            # Obtener ruta del archivo .env (preferir directorio de trabajo actual)
+            env_paths = [
+                os.path.join(os.getcwd(), ".env"),
+                os.path.join(get_resource_path(), ".env"),
+                ".env"
+            ]
+            
+            self.log_message(f"Buscando archivo .env en:")
+            for i, path in enumerate(env_paths):
+                exists = os.path.exists(path)
+                self.log_message(f"  {i+1}. {path} - {'EXISTE' if exists else 'NO EXISTE'}")
+            
+            # Usar el primer path que exista o el de trabajo actual como fallback
+            env_path = env_paths[0]
+            for path in env_paths:
+                if os.path.exists(path):
+                    env_path = path
+                    break
+            
+            self.log_message(f"Usando archivo: {env_path}")
 
-        # Leer archivo existente si existe
-        if os.path.exists(env_path):
-            with open(env_path, "r") as f:
-                env_content = f.readlines()
+            # Leer archivo existente si existe
+            if os.path.exists(env_path):
+                with open(env_path, "r", encoding='utf-8') as f:
+                    env_content = f.readlines()
+                self.log_message(f"Archivo leído, {len(env_content)} líneas encontradas")
+            else:
+                self.log_message("Creando nuevo archivo .env")
 
-        # Variables a actualizar
-        updates = {
-            "HIGHLEVEL_ACCESS_TOKEN": access_token,
-            "HIGHLEVEL_LOCATION_ID": location_id,
-            "HIGHLEVEL_API_VERSION": "2021-07-28",
-            "API_LIMIT": "300",
-            "API_OFFSET": "0",
-        }
+            # Variables a actualizar
+            updates = {
+                "HIGHLEVEL_ACCESS_TOKEN": access_token,
+                "HIGHLEVEL_LOCATION_ID": location_id,
+                "HIGHLEVEL_API_VERSION": "2021-07-28",
+                "API_LIMIT": "300",
+                "API_OFFSET": "0",
+            }
 
-        # Actualizar líneas existentes
-        updated_lines = []
-        updated_keys = set()
+            # Actualizar líneas existentes
+            updated_lines = []
+            updated_keys = set()
 
-        for line in env_content:
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                key = line.split("=")[0].strip()
-                if key in updates:
-                    updated_lines.append(f"{key}={updates[key]}")
-                    updated_keys.add(key)
+            for line in env_content:
+                line = line.strip()
+                if "=" in line and not line.startswith("#"):
+                    key = line.split("=")[0].strip()
+                    if key in updates:
+                        updated_lines.append(f"{key}={updates[key]}")
+                        updated_keys.add(key)
+                    else:
+                        updated_lines.append(line)
                 else:
                     updated_lines.append(line)
+
+            # Agregar nuevas variables
+            for key, value in updates.items():
+                if key not in updated_keys:
+                    updated_lines.append(f"{key}={value}")
+
+            # Escribir archivo
+            self.log_message(f"Escribiendo {len(updated_lines)} líneas al archivo")
+            with open(env_path, "w", encoding='utf-8') as f:
+                f.write("\n".join(updated_lines))
+            
+            self.log_message(f"Archivo guardado en: {env_path}")
+            
+            # Verificar que se guardó correctamente
+            if os.path.exists(env_path):
+                with open(env_path, "r", encoding='utf-8') as f:
+                    saved_content = f.read()
+                self.log_message(f"Verificación: archivo contiene {len(saved_content)} caracteres")
+                
+                # Verificar que las variables están presentes
+                if access_token in saved_content and location_id in saved_content:
+                    self.log_message("✅ Credenciales verificadas en archivo")
+                else:
+                    self.log_message("❌ Credenciales NO encontradas en archivo", is_error=True)
+
+            # Recargar variables de entorno
+            load_dotenv(env_path, override=True)
+            self.log_message(f"Variables de entorno recargadas desde: {env_path}")
+            
+            # También recargar desde las ubicaciones estándar
+            for reload_path in env_paths:
+                if os.path.exists(reload_path):
+                    load_dotenv(reload_path, override=True)
+            
+            # Verificar que las variables se cargaron
+            if os.getenv("HIGHLEVEL_ACCESS_TOKEN") and os.getenv("HIGHLEVEL_LOCATION_ID"):
+                self.log_message("✅ Variables de entorno cargadas correctamente")
             else:
-                updated_lines.append(line)
-
-        # Agregar nuevas variables
-        for key, value in updates.items():
-            if key not in updated_keys:
-                updated_lines.append(f"{key}={value}")
-
-        # Escribir archivo
-        with open(env_path, "w") as f:
-            f.write("\n".join(updated_lines))
-
-        # Recargar variables de entorno
-        load_dotenv(env_path, override=True)
-        
-        # También recargar desde las ubicaciones estándar
-        for reload_path in env_paths:
-            if os.path.exists(reload_path):
-                load_dotenv(reload_path, override=True)
+                self.log_message("❌ Variables de entorno NO se cargaron", is_error=True)
+                
+        except Exception as e:
+            self.log_message(f"Error guardando credenciales: {e}", is_error=True)
+            self.log_message(f"Detalles del error: {type(e).__name__}: {str(e)}", is_error=True)
 
     def on_token_error(self, error_message):
         """Maneja errores en la obtención de token."""

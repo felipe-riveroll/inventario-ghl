@@ -28,8 +28,8 @@ def build_with_nuitka():
         "--jobs=4",                     # Usar múltiples cores
         
         # GUI y Windows
-        #"--windows-disable-console",    # No mostrar consola (GUI app)
-        "--windows-console-mode=force", # Forzar consola (útil para debugging)
+        "--windows-disable-console",    # No mostrar consola (GUI app)
+        #"--windows-console-mode=force", # Forzar consola (útil para debugging)
         "--enable-plugin=pyside6",      # Plugin para PySide6
         
         # Metadatos del ejecutable
@@ -109,7 +109,7 @@ def build_onedir():
         "--jobs=4",
         
         # GUI y Windows
-        "--windows-disable-console",
+        "--windows-console-mode=force",
         "--enable-plugin=pyside6",
         
         # Metadatos

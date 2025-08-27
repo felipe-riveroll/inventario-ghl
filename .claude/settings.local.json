@@ -6,7 +6,15 @@
       "mcp__n8n-mcp__n8n_get_workflow_details",
       "Bash(uv sync:*)",
       "Bash(uv run ruff:*)",
-      "Bash(del debug_api.py get_location_id.py get_token.py test_scopes.py)"
+      "Bash(del debug_api.py get_location_id.py get_token.py test_scopes.py)",
+      "Bash(uv run:*)",
+      "Bash(InventarioGHL.exe)",
+      "Bash(./InventarioGHL.exe)",
+      "Bash(rmdir:*)",
+      "Bash(rm:*)",
+      "Bash(.test_onefile.bat)",
+      "Bash(timeout:*)",
+      "Bash(git add:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

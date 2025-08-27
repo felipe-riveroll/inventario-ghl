@@ -23,6 +23,7 @@ dev-dependencies = [
     "black>=24.0.0",
     "ruff>=0.4.0",
     "cx-freeze>=6.15.0",
+    "nuitka>=2.7.13",
 ]
 
 [tool.ruff]
